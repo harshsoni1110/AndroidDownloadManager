@@ -1,6 +1,6 @@
 package com.example.hsoni.downloadmgrpoc;
 
-import java.util.ArrayList;
+import java.net.MalformedURLException;
 import java.util.HashMap;
 
 /**
@@ -8,7 +8,7 @@ import java.util.HashMap;
  */
 
 public class DownloadManager {
-    private static DownloadManager mDownloadmManager;
+    private static DownloadManager mDownloadManager;
 
     HashMap <Integer, DownloadInfoBean> mDownloadList;
     private static int i = 0;
@@ -17,15 +17,25 @@ public class DownloadManager {
     }
 
     public static DownloadManager getInstance (){
-        if (mDownloadmManager == null) {
-            mDownloadmManager = new DownloadManager();
+        if (mDownloadManager == null) {
+            mDownloadManager = new DownloadManager();
         }
-        return mDownloadmManager;
+        return mDownloadManager;
     }
 
-    public int addToList (DownloadInfoBean downloadInfoBean){
-        mDownloadList.put(++i, downloadInfoBean);
-        return i;
+    public DownloadRequest download (String url, String dirPath, String fileName){
+        DownloadRequest downloadRequest = null;
+        try {
+            downloadRequest = new DownloadRequest(url, dirPath, fileName);
+        } catch (MalformedURLException e) {
+            //Show error in notification or wherever required
+            downloadRequest = null;
+            e.printStackTrace();
+        }
+        return downloadRequest;
+    }
+    public void addToDownloads (DownloadInfoBean downloadInfoBean){
+        mDownloadList.put(downloadInfoBean.getDownloadId(), downloadInfoBean);
     }
 
     public DownloadInfoBean getDownloadInfo (int downloadId){

@@ -11,20 +11,19 @@ import android.support.v4.content.LocalBroadcastManager;
 
 public class ProgressHandler extends Handler {
     private DownloadInfoBean downloadInfoBean;
-    public ProgressHandler(DownloadInfoBean downloadInfoBean) {
+    public ProgressHandler(int downloadId) {
         super(Looper.getMainLooper());
-        this.downloadInfoBean = downloadInfoBean;
+        this.downloadInfoBean = DownloadManager.getInstance().getDownloadInfo(downloadId);
     }
 
     @Override
     public void handleMessage(Message msg) {
         switch (msg.what){
             case DownloadConstant.DOWNLOAD_PROGRESS:
-
-                int progress = (int)msg.arg1;
+                int progress = msg.arg1;
+                int status = msg.arg2;
+                downloadInfoBean.setDownloadStatus(status);
                 downloadInfoBean.setProgress(progress);
-               /* if (mProgressListener != null)
-                    mProgressListener.postProgress(progress);*/
                 break;
         }
     }

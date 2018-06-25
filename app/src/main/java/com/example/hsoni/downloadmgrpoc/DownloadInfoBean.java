@@ -1,73 +1,127 @@
 package com.example.hsoni.downloadmgrpoc;
 
+import android.arch.lifecycle.MediatorLiveData;
 import android.arch.lifecycle.MutableLiveData;
-import android.os.Parcel;
-import android.os.Parcelable;
+import android.arch.lifecycle.Observer;
+import android.content.Context;
+import android.support.annotation.Nullable;
+
+import java.net.URL;
+import java.util.HashMap;
 
 /**
  * Created by HSoni on 6/21/2018.
  */
 
-public class DownloadInfoBean implements Parcelable{
+public class DownloadInfoBean{
 
-    public DownloadInfoBean() {
-        this.progress = new MutableLiveData<>();
-    }
-
-    DownloadInfoBean (Parcel source){
-        this.downloadId = source.readInt();
-//        this.progress.setValue(( (MutableLiveData<Integer>)source.readValue(MutableLiveData.class.getClassLoader())).getValue() );
-//        this.mProgressListener = (ProgressListener) source.readValue(ProgressListener.class.getClassLoader());
-    }
+    private static int i = 0;
     private int downloadId;
-    private ProgressListener mProgressListener;
+    private String downloadTitle;
+    private URL url;
+    private String directoryPath;
+    private String downloadFileName;
+    private HashMap<String, String > headers;
+    private long totalBytes;
+    private long bytesDownloaded;
+    private MutableLiveData<String> status;
     private MutableLiveData<Integer> progress;
+
+    private MediatorLiveData<DownloadInfoBean> updateThis;
+    public DownloadInfoBean() {
+        //Db entries
+
+    }
+
+    public DownloadInfoBean(DownloadRequest downloadRequest){
+        this.downloadId = ++i;
+        this.downloadTitle = downloadRequest.getDescription();
+        this.url = downloadRequest.getUrl();
+        this.directoryPath = downloadRequest.getDirPath();
+        this.downloadFileName = downloadRequest.getFileName();
+        this.headers = downloadRequest.getHeaders();
+        this.progress = new MutableLiveData<>();
+        this.progress.setValue(0);
+        this.totalBytes = 0;
+        this.bytesDownloaded = 0;
+        this.status = new MutableLiveData<>();
+        this.status.setValue(getDownloadStatus (DownloadConstant.STATUS_PENDING));
+        this.progress = new MutableLiveData<Integer>();
+        this.updateThis = new MediatorLiveData<>();
+        this.updateThis.setValue(this);
+        this.updateThis.addSource(this.progress, new Observer<Integer>() {
+            @Override
+            public void onChanged(@Nullable Integer integer) {
+                updateThis.setValue(DownloadInfoBean.this);
+            }
+        });
+
+        this.updateThis.addSource(status, new Observer<String>() {
+            @Override
+            public void onChanged(@Nullable String s) {
+                updateThis.setValue(DownloadInfoBean.this);
+            }
+        });
+    }
 
     public int getDownloadId() {
         return downloadId;
     }
 
+    public String getDownloadTitle() {
+        return downloadTitle;
+    }
+
+    public String getDirectoryPath(){
+        return directoryPath;
+    }
+
+    public String getDownloadFileName(){
+        return downloadFileName;
+    }
     public void setDownloadId(int downloadId) {
         this.downloadId = downloadId;
     }
 
-    public ProgressListener getmProgressListener() {
-        return mProgressListener;
-    }
-
-    public void setmProgressListener(ProgressListener mProgressListener) {
-        this.mProgressListener = mProgressListener;
-    }
-
-    public static Creator<DownloadInfoBean> CREATOR = new Creator<DownloadInfoBean>() {
-        @Override
-        public DownloadInfoBean createFromParcel(Parcel source) {
-            return new DownloadInfoBean(source);
-        }
-
-        @Override
-        public DownloadInfoBean[] newArray(int size) {
-            return new DownloadInfoBean[size];
-        }
-    };
-
-    @Override
-    public int describeContents() {
-            return 0;
-    }
-
-    @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeInt(downloadId);
-//        dest.writeValue(progress);
-//        dest.writeValue(mProgressListener);
-    }
 
     public MutableLiveData<Integer> getProgress() {
         return progress;
     }
 
+    public MediatorLiveData<DownloadInfoBean> getUpdates (){
+        return updateThis;
+    }
+    public MutableLiveData<String> getStatus(){
+        return status;
+    }
     public void setProgress(int progress) {
         this.progress.setValue(progress);
+    }
+
+    public String getDownloadStatus (int downloadStatus) {
+        switch (downloadStatus){
+            case 0:
+                return "Pending";
+            case 1:
+                return "Start";
+            case 2:
+                return "Downloading";
+            case 3:
+                return "Completed";
+            default:
+                return "Failed";
+        }
+    }
+    public void setDownloadStatus (int status){
+
+        this.status.setValue(getDownloadStatus(status));
+    }
+
+
+
+    public DownloadInfoBean startDownloading (Context context){
+        setDownloadStatus(DownloadConstant.STATUS_START);
+        DownloadHelper.scheduleDownload (context, this);
+        return this;
     }
 }
